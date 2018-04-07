@@ -92,14 +92,27 @@ class Board():
                     self.set_player_at(diag_x, diag_y, self.current_player)
                     changes.append((diag_x, diag_y))
 
+        self.history.append((move, changes))
+
+        self._switch_player()
+
+        return self
+
+    def _switch_player(self):
         if self.current_player == Board.PLAYER1:
             self.current_player = Board.PLAYER2
         else:
             self.current_player = Board.PLAYER1
 
-        self.history.append((move, changes))
+    def undo(self):
+        ((to_x, to_y), (from_x, from_y)), changes = self.history.pop()
 
-        return self
+        for x, y in changes:
+            self.set_player_at(x, y, self.current_player)
+
+        self._switch_player()
+        self.set_player_at(to_x, to_y, self.current_player)
+        self.empty(from_x, from_y)
 
     def print_board(self):
         print("Current move: {}, Turn for: {}".format(len(self.history), "X" if self.current_player==Board.PLAYER1 else "O"))
@@ -158,21 +171,27 @@ def test_board_move():
     assert board.current_player == Board.PLAYER2
 
     assert board.move(((2,0), (3,0))) == "Invalid move"
-    board.print_board()
 
     assert not board.move(((3,1), (2,1))) == "Invalid move"
-    board.print_board()
     assert board._value(3,1) == Board.EMPTY
     assert board._value(2,1) == Board.PLAYER2
     assert board._value(2,0) == Board.PLAYER2
     assert board.current_player == Board.PLAYER1
 
-    assert not board.move(((0,0), (1,0))) == "Invalid move"
     board.print_board()
+    assert not board.move(((0,0), (1,0))) == "Invalid move"
     assert board._value(1,0) == Board.PLAYER1
     assert board._value(2,0) == Board.PLAYER1
     assert board._value(1,1) == Board.PLAYER1
     assert board._value(2,1) == Board.PLAYER1
+
+    board.undo()
+    board.print_board()
+    assert board._value(1,0) == Board.EMPTY
+    assert board._value(2,0) == Board.PLAYER2
+    assert board._value(1,1) == Board.PLAYER2
+    assert board._value(2,1) == Board.PLAYER2
+
 
 test_empty_board_moves()
 test_board_valid_position()
