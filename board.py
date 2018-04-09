@@ -1,5 +1,3 @@
-
-
 class Board():
     EMPTY = 0
     PLAYER1 = 1
@@ -52,6 +50,16 @@ class Board():
     def _value(self, x, y):
         return self.board[y][x]
 
+    def copy(self):
+        import copy
+        board_copy = Board()
+        board_copy.board = copy.deepcopy(self.board)
+        board_copy.current_player = self.current_player
+        board_copy.history = copy.deepcopy(self.history)
+
+        return board_copy
+
+
     def empty(self, x, y):
         self.board[y][x] = Board.EMPTY
 
@@ -78,7 +86,6 @@ class Board():
         self.empty(from_x, from_y)
 
         to_neighbors = self.get_normal_neighbors(to_x, to_y)
-        print(to_neighbors)
         for n_x, n_y in to_neighbors:
             if self._value(n_x, n_y) and not self._value(n_x, n_y) == self.current_player:
                 self.set_player_at(n_x, n_y, self.current_player)
@@ -114,21 +121,21 @@ class Board():
         self.set_player_at(to_x, to_y, self.current_player)
         self.empty(from_x, from_y)
 
-    def print_board(self):
-        print("Current move: {}, Turn for: {}".format(len(self.history), "X" if self.current_player==Board.PLAYER1 else "O"))
-        for row in self.board:
-            for field in row:
-                if field == Board.PLAYER1:
-                    print("X", end='')
-                elif field == Board.PLAYER2:
-                    print("O", end='')
-                else:
-                    print(".", end='')
-            print('')
-        print('****************')
+    def winner(self):
+        moves = self.get_moves()
+        if not moves:
+            return Board.PLAYER1 if self.current_player == Board.PLAYER2 else Board.PLAYER2
+
+        self._switch_player()
+        moves = self.get_moves()
+        self._switch_player()
+        if not moves:
+            return Board.PLAYER1 if not self.current_player == Board.PLAYER2 else Board.PLAYER2
+
+        return 0
 
                 
-def test_empty_board_moves():
+def test_board_empty_moves():
     board = Board()
     moves  = board.get_moves()
     assert len(moves) == 8
@@ -160,7 +167,6 @@ def test_board_neighbor_fields():
 
 def test_board_move():
     board = Board()
-    board.print_board()
     assert board.move(((-1,0), (0,0))) == "Invalid move"
     assert board.move(((4,0), (3,0))) == "Invalid move"
     assert board.move(((1,0), (3,0))) == "Invalid move"
@@ -178,7 +184,6 @@ def test_board_move():
     assert board._value(2,0) == Board.PLAYER2
     assert board.current_player == Board.PLAYER1
 
-    board.print_board()
     assert not board.move(((0,0), (1,0))) == "Invalid move"
     assert board._value(1,0) == Board.PLAYER1
     assert board._value(2,0) == Board.PLAYER1
@@ -186,16 +191,49 @@ def test_board_move():
     assert board._value(2,1) == Board.PLAYER1
 
     board.undo()
-    board.print_board()
     assert board._value(1,0) == Board.EMPTY
     assert board._value(2,0) == Board.PLAYER2
     assert board._value(1,1) == Board.PLAYER2
     assert board._value(2,1) == Board.PLAYER2
 
+def test_board_copy():
+    board = Board()
+    board_copy = board.copy()
 
-test_empty_board_moves()
-test_board_valid_position()
-test_board_neighbor_fields()
-test_board_move()
-            
-                    
+    assert not board.move(((1,0), (2,0))) == "Invalid move"
+    assert board._value(1,0) == Board.EMPTY
+    assert board._value(2,0) == Board.PLAYER1
+    assert board.current_player == Board.PLAYER2
+
+    assert board_copy._value(1,0) == Board.PLAYER1
+    assert board_copy._value(2,0) == Board.EMPTY
+    assert board_copy.current_player == Board.PLAYER1
+
+
+def test_board_winner():
+    board = Board()
+    assert 0 == board.winner()
+    assert board.current_player == Board.PLAYER1
+
+    board.board = [
+            [-1, 1, 1],
+            [-1, 1, 0],
+            [-1, 1, 1]
+        ]
+    board.current_player = -1
+    assert 1 == board.winner()
+    assert board.current_player == Board.PLAYER2
+
+    board.current_player = 1
+    assert 1 == board.winner()
+    assert board.current_player == Board.PLAYER1
+
+
+if __name__ == '__main__':
+    test_board_empty_moves()
+    test_board_valid_position()
+    test_board_neighbor_fields()
+    test_board_move()
+    test_board_winner()
+
+
