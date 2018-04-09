@@ -134,6 +134,16 @@ class Board():
 
         return 0
 
+    def hash(self):
+        return hash(str(self.board)+str(self.current_player))
+
+    def rotate_left(self):
+        new_board = self.copy()
+        new_board.board = [x[0] for x in zip(self.board[::-1])]
+        return new_board
+
+
+
                 
 def test_board_empty_moves():
     board = Board()
@@ -209,6 +219,19 @@ def test_board_copy():
     assert board_copy._value(2,0) == Board.EMPTY
     assert board_copy.current_player == Board.PLAYER1
 
+def test_position():
+    board = Board()
+    board.current_player = 1
+    board.board = [
+            [ 0, 1, 1, 0 ,0],
+            [ 1, 0, 1, 0,-1],
+            [ 1, 1, 0,-1,-1],
+            [ 1, 1, 0,-1, 0],
+            [-1,-1,-1, 0, 0],
+        ]
+
+    moves = board.get_moves()
+    assert ((2,1), (3,1)) in moves
 
 def test_board_winner():
     board = Board()
@@ -228,6 +251,25 @@ def test_board_winner():
     assert 1 == board.winner()
     assert board.current_player == Board.PLAYER1
 
+def test_board_rotate_left():
+    board = Board()
+    left = board.rotate_left()
+
+    assert not board.board == left.board
+    assert not board.hash() == left.hash()
+    assert board.current_player == left.current_player
+
+    left = left.rotate_left()
+    assert board.hash() == left.hash()
+
+    left = left.rotate_left()
+    assert not board.hash() == left.hash()
+
+    left = left.rotate_left()
+    assert board.hash() == left.hash()
+
+
+
 
 if __name__ == '__main__':
     test_board_empty_moves()
@@ -235,5 +277,7 @@ if __name__ == '__main__':
     test_board_neighbor_fields()
     test_board_move()
     test_board_winner()
+    test_board_rotate_left()
+    test_position()
 
 
