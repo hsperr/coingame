@@ -1,6 +1,3 @@
-from board import Board
-from display import print_board
-
 
 class NegaScout():
 
@@ -33,10 +30,19 @@ class NegaScout():
         else:
             return self._negascout(board, self.max_depth, -1000000, 100000)
 
+
+    @staticmethod
+    def _current_player_score(board):
+        return board.get_num_occupied_fields(board.current_player)
+
+    @staticmethod
+    def _current_player_score_moves(board):
+        return board.get_num_occupied_fields(board.current_player) + len(board.get_moves())
+
     def _negascout(self, board, depth, alpha, beta):
         self.moves_looked_at += 1
         if depth == 0:
-            return board.current_player_score(), None
+            return NegaScout._current_player_score(board), None
 
         moves = board.get_moves()
         if not moves:
@@ -116,15 +122,19 @@ class NegaScout():
 
 
 if __name__ == '__main__':
-    board = Board()
-    board.board = [
+    from ArrayBoard import ArrayBoard
+    board = ArrayBoard(
+    [
         [ 0, 1, 1, 0, 0],
         [ 0, 1, 1,-1,-1],
         [ 1, 1, 0,-1,-1],
         [-1, 1, 0, 0,-1],
         [-1, 0,-1,-1, 0]
-    ]
-    board.current_player = -1
+    ],
+    current_player = -1)
+
+    from display import print_board
+    print_board(board)
 
     search = NegaScout(6, use_deepening=False, use_table=False)
     print(search.find_best_move(board))

@@ -2,8 +2,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from board import Board
-from display import print_board
+from ArrayBoard import ArrayBoard
 
 class MonteCarloTreeSearch():
     
@@ -12,7 +11,7 @@ class MonteCarloTreeSearch():
         plays = defaultdict(int)
         wins = defaultdict(int)
 
-        for i in range(500):
+        for i in range(50):
             if i and i%100==0:
                 print(i)
 
@@ -57,6 +56,8 @@ class MonteCarloTreeSearch():
         best_score = 0
         for move in moves:
             key = (move, original_board.current_player, original_board.hash())
+            if not key in plays:
+                continue
             score = wins[key]/plays[key]
             if score > best_score:
                 best_move = move
@@ -76,12 +77,9 @@ class MonteCarloTreeSearch():
             board.move(move)
 
 if __name__ == '__main__':
-    board = Board()
+    board = ArrayBoard()
+    search = MonteCarloTreeSearch()
     while True:
-        search = MonteCarloTreeSearch()
         move = search.find_best_move(board)
         board.move(move)
         print_board(board)
-
-
-
