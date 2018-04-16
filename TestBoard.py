@@ -23,6 +23,13 @@ class BoardTestRunner():
         assert board.valid_position(0, board.size_y - 1)
         assert board.valid_position(board.size_x - 1, board.size_y - 1)
 
+    def test_board_not_wrapping(self):
+        board = self.board.standard_board()
+        assert not board.move(((4, 3), (4, 2))) == Board.INVALID_MOVE
+        assert board.value(4, 1) == Board.PLAYER1
+        assert board.value(0, 3) == Board.PLAYER2
+
+
     def test_board_move(self):
         board = self.board.standard_board()
         assert board.move(((-1, 0), (0, 0))) == Board.INVALID_MOVE
@@ -32,6 +39,7 @@ class BoardTestRunner():
         assert not board.move(((1, 0), (2, 0))) == Board.INVALID_MOVE
         assert board.value(1, 0) == Board.EMPTY
         assert board.value(2, 0) == Board.PLAYER1
+        assert board.value(3, 0) == Board.PLAYER1
         assert board.current_player == Board.PLAYER2
 
         assert board.move(((2, 0), (3, 0))) == Board.INVALID_MOVE
@@ -47,12 +55,14 @@ class BoardTestRunner():
         assert board.value(2, 0) == Board.PLAYER1
         assert board.value(1, 1) == Board.PLAYER1
         assert board.value(2, 1) == Board.PLAYER1
+        assert board.current_player == Board.PLAYER2
 
         board.undo()
         assert board.value(1, 0) == Board.EMPTY
         assert board.value(2, 0) == Board.PLAYER2
         assert board.value(1, 1) == Board.PLAYER2
         assert board.value(2, 1) == Board.PLAYER2
+        assert board.current_player == Board.PLAYER1
 
     def test_get_moves(self):
         board = self.board.standard_board()
@@ -66,6 +76,22 @@ class BoardTestRunner():
              ((0, 1), (0, 2)), ((1, 1), (1, 2)), ((1, 1), (2, 0)), ((3, 3), (4, 2)), ((3, 3), (2, 2)), ((4, 3), (3, 2)),
              ((3, 4), (2, 3)), ((1, 1), (0, 2)), ((3, 3), (2, 4)), ((1, 0), (2, 1)), ((0, 1), (1, 2)),
              ((1, 1), (2, 2))])
+
+    def test_occupied_fields(self):
+        board = self.board.from_array(
+            board=[
+                [0, 1, 1, 0, 0],
+                [0, 1, 1, -1, -1],
+                [1, 1, 0, -1, -1],
+                [-1, 1, 0, 0, -1],
+                [-1, 0, -1, -1, 0]
+            ],
+            current_player=-1,
+            allow_diagonals=True
+        )
+
+        assert board.get_num_occupied_fields(Board.PLAYER1) == 7
+        assert board.get_num_occupied_fields(Board.PLAYER2) == 9
 
     def test_position(self):
         board = self.board.from_array(
@@ -98,12 +124,81 @@ class BoardTestRunner():
             allow_diagonals=True
         )
 
-        print(board.get_moves())
         assert sorted(board.get_moves()) == sorted(
             [((1, 0), (0, 0)), ((1, 0), (0, 1)), ((2, 0), (3, 0)), ((1, 1), (0, 1)), ((1, 1), (2, 2)), ((1, 1), (0, 0)),
              ((2, 1), (2, 2)), ((2, 1), (3, 0)), ((0, 2), (0, 1)), ((1, 2), (2, 2)), ((1, 2), (2, 3)), ((1, 2), (0, 1)),
              ((1, 3), (2, 3)), ((1, 3), (1, 4)), ((1, 3), (2, 2))])
 
+        board = self.board.from_array(
+            board=[
+                [0,  1,  1,  0,  0],
+                [0, -1, -1, -1, -1],
+                [1, -1,  1 , 0, -1],
+                [-1, 0,  1,  0, -1],
+                [-1, 0,  1, -1,  0]
+            ],
+            current_player=-1,
+            allow_diagonals=True
+        )
+
+        print(board.get_moves())
+        assert sorted(board.get_moves()) == sorted(
+            [((1, 1), (0, 1)), ((4, 2), (3, 2)), ((4, 3), (3, 3)), ((0, 3), (1, 3)), ((0, 4), (1, 4)), ((3, 4), (4, 4)),
+             ((3, 1), (3, 0)), ((4, 1), (4, 0)), ((3, 4), (3, 3)), ((3, 1), (3, 2)), ((1, 2), (1, 3)), ((4, 3), (4, 4)),
+             ((2, 1), (3, 0)), ((3, 1), (4, 0)), ((0, 4), (1, 3)), ((1, 1), (0, 0)), ((4, 1), (3, 0)), ((1, 2), (0, 1)),
+             ((4, 3), (3, 2)), ((4, 1), (3, 2)), ((4, 2), (3, 3)), ((2, 1), (3, 2)), ((0, 3), (1, 4))]
+            )
+
+    def test_board_moves(self):
+        board = self.board.from_array(
+            [
+                [0, 1, 1, 0, 0],
+                [0, 1, 1, -1, -1],
+                [1, 1, 0, -1, -1],
+                [-1, 1, 0, 0, -1],
+                [-1, 0, -1, -1, 0]
+            ],
+            current_player=-1)
+
+        assert sorted(board.get_moves()) == sorted(
+            [((3, 1), (3, 0)), ((4, 1), (4, 0)), ((3, 2), (2, 2)), ((3, 2), (3, 3)), ((4, 3), (3, 3)), ((4, 3), (4, 4)),
+             ((0, 4), (1, 4)), ((2, 4), (1, 4)), ((2, 4), (2, 3)), ((3, 4), (4, 4)), ((3, 4), (3, 3))])
+
+        board = self.board.from_array(
+            [
+                [-1, 1, 1, 1, 1],
+                [1, 1, 1, -1, 0],
+                [0, 0, 1, 0, 1],
+                [0, 1, 0, 0, 1],
+                [0, 1, 1, 1, 0]
+            ],
+            current_player=1)
+
+        assert sorted(board.get_moves()) == sorted(
+            [((2, 2), (1, 2)), ((4, 2), (3, 2)), ((1, 3), (0, 3)), ((4, 3), (3, 3)), ((1, 4), (0, 4)), ((2, 2), (3, 2)),
+             ((1, 3), (2, 3)), ((3, 4), (4, 4)), ((4, 2), (4, 1)), ((1, 3), (1, 2)), ((2, 4), (2, 3)), ((3, 4), (3, 3)),
+             ((4, 0), (4, 1)), ((0, 1), (0, 2)), ((1, 1), (1, 2)), ((2, 2), (2, 3)), ((4, 3), (4, 4))])
+
+    def test_read_from_array(self):
+        array = [
+            [-1, 1, 1, 1, 1],
+            [1, 1, 1, -1, 0],
+            [0, 0, 1, 0, 1],
+            [0, 1, 0, 0, 1],
+            [0, 1, 1, 1, 0]
+        ]
+        board = self.board.from_array(
+            array,
+            current_player=1)
+
+        for y, row in enumerate(array):
+            for x, field in enumerate(row):
+                if field == Board.PLAYER1:
+                    assert board.value(x, y) == Board.PLAYER1
+                if field == Board.PLAYER2:
+                    assert board.value(x, y) == Board.PLAYER2
+                if field == Board.EMPTY:
+                    assert board.value(x, y) == Board.EMPTY
 
     def test_board_winner(self):
         board = self.board.standard_board()
@@ -179,6 +274,7 @@ class TestArrayBoard(BoardTestRunner):
         left = left.rotate_left()
         assert board.hash() == left.hash()
 
+
 class TestBitboard(BoardTestRunner):
     @classmethod
     def setup_class(cls):
@@ -186,8 +282,7 @@ class TestBitboard(BoardTestRunner):
         usually contains tests)."""
         cls.board = BitBoard
 
-
     def test_bit_scan(self):
         bitBoard = self.board.standard_board()
-        assert bitBoard._bit_scan(0b1100011000000000001100011) == [(0, 0), (1, 0), (0, 1), (1, 1), (3, 3), (4, 3), (3, 4), (4, 4)]
-
+        assert bitBoard._bit_scan(0b1100011000000000001100011) == [(0, 0), (1, 0), (0, 1), (1, 1), (3, 3), (4, 3),
+                                                                   (3, 4), (4, 4)]

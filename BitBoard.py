@@ -1,5 +1,8 @@
 from ArrayBoard import Board
 
+import random
+import copy
+
 
 class BitBoard(Board):
 
@@ -7,7 +10,6 @@ class BitBoard(Board):
     def from_array(cls, board, current_player, allow_diagonals=False):
         player1 = 0b0000000000000000000000000
         player2 = 0b0000000000000000000000000
-
         for y, row in enumerate(board):
             for x, field in enumerate(row):
                 if field == Board.PLAYER1:
@@ -46,14 +48,29 @@ class BitBoard(Board):
         self.allow_diagonals = allow_diagonals
         self.history = []
 
+    def copy(self):
+        board = BitBoard(self.player1, self.player2, self.current_player, self.size_x, self.size_y, self.allow_diagonals)
+        board.history = copy.deepcopy(self.history)
+        return board
+
+    @property
+    def other_player(self):
+        if self.current_player == Board.PLAYER1:
+            return Board.PLAYER2
+        else:
+            return Board.PLAYER1
+
+    @property
+    def board(self):
+        return bin(self.player1).split('b')[1].zfill(self.size_x * self.size_y) + bin(self.player2).split('b')[1].zfill(self.size_x * self.size_y)
+
+    def hash(self):
+        return hash(self.board + str(self.current_player))
+
     def invert(self, b):
         return int('1' * self.size_x * self.size_y, 2) - b
 
     def winner(self):
-        self._pretty_print(self.player1 | self.player2)
-        print('player1', self._get_moves_for(self.player1))
-        print('player2', self._get_moves_for(self.player2))
-
         if not self._get_moves_for(self.player1):
             return Board.PLAYER2
         elif not self._get_moves_for(self.player2):
@@ -104,12 +121,15 @@ class BitBoard(Board):
         ((from_x, from_y), (to_x, to_y)) = move
 
         if not self.valid_position(from_x, from_y) or not self.valid_position(to_x, to_y):
+            print('val pos', self.valid_position(from_x, from_y), self.valid_position(to_x, to_y))
             return Board.INVALID_MOVE
 
         if not self.value(from_x, from_y) == self.current_player:
+            print('value', self.value(from_x, from_y), self.current_player)
             return Board.INVALID_MOVE
 
         if not self.value(to_x, to_y) == Board.EMPTY:
+            print('empty', self.value(to_x, to_y) == Board.EMPTY)
             return Board.INVALID_MOVE
 
         if self.current_player == Board.PLAYER1:
@@ -120,7 +140,7 @@ class BitBoard(Board):
             other_player = self.player1
 
         self.history.append((
-            self.player1, self.player2
+            self.player1, self.player2, self.current_player
         ))
 
         player = player ^ (1 << self._pos_to_int(from_x, from_y))
@@ -150,8 +170,10 @@ class BitBoard(Board):
             self.player1 = other_player
             self.current_player = Board.PLAYER1
 
+        return self
+
     def undo(self):
-        self.player1, self.player2 = self.history[-1]
+        self.player1, self.player2, self.current_player = self.history[-1]
         self.history = self.history[:-1]
 
     def get_moves(self):
@@ -159,6 +181,12 @@ class BitBoard(Board):
             return self._get_moves_for(self.player1)
         else:
             return self._get_moves_for(self.player2)
+
+    def get_num_occupied_fields(self, player):
+        if player == Board.PLAYER1:
+            return len(self._bit_scan(self.player1))
+        if player == Board.PLAYER2:
+            return len(self._bit_scan(self.player2))
 
     def _get_moves_for(self, player):
         empty = self.invert(self.player1 | self.player2)

@@ -6,9 +6,9 @@ def print_board(board):
         current_player = "X" if board.current_player == ArrayBoard.PLAYER1 else "O"
     ))
 
-    for x in range(board.size_x):
-        for y in range(board.size_y):
-            field  =  board.value(x, y)
+    for y in range(board.size_y):
+        for x in range(board.size_x):
+            field = board.value(x, y)
             if field == ArrayBoard.PLAYER1:
                 print("X", end='')
             elif field == ArrayBoard.PLAYER2:

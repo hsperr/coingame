@@ -1,3 +1,6 @@
+from display import print_board
+import random
+import time
 
 class NegaScout():
 
@@ -19,37 +22,38 @@ class NegaScout():
         self.moves_looked_at = 0
 
         if self.use_deepening:
+            t0 = time.time()
             for i in range(2, self.max_depth+1, 2):
                 self.moves_looked_at = 0
                 self.exact_hits = 0
                 self.beta_hits = 0
                 self.pv_searches = 0
-                score, move = self._negascout(board, i, -1000000, 100000)
-                print(i, score, move, self.moves_looked_at, self.exact_hits, self.beta_hits, self.pv_searches, self.pv_searches_beta)
+                score, move = self._negascout(board, i, -1000000, 1000000)
+                print(i, score, move, self.moves_looked_at, self.exact_hits, self.beta_hits, self.pv_searches, self.pv_searches_beta, time.time()-t0)
             return score, move
         else:
-            return self._negascout(board, self.max_depth, -1000000, 100000)
+            return self._negascout(board, self.max_depth, -1000000, 1000000)
 
 
     @staticmethod
     def _current_player_score(board):
-        return board.get_num_occupied_fields(board.current_player)
+        return board.get_num_occupied_fields(board.current_player)-board.get_num_occupied_fields(board.other_player)
 
     @staticmethod
     def _current_player_score_moves(board):
-        return board.get_num_occupied_fields(board.current_player) + len(board.get_moves())
+        return NegaScout._current_player_score(board) + len(board._get_moves_for(board.current_player)) - len(board._get_moves_for(board.other_player))
 
     def _negascout(self, board, depth, alpha, beta):
         self.moves_looked_at += 1
         if depth == 0:
             return NegaScout._current_player_score(board), None
 
+        #print(board)
         moves = board.get_moves()
         if not moves:
             return -9999999, None
         
         best_move = None
-
         used_move = None
         if self.use_table and board.hash() in self.transposition_table:
             record_type, h_board, h_depth, h_alpha, h_beta, h_best_move = self.transposition_table[board.hash()]
@@ -59,7 +63,6 @@ class NegaScout():
                 print(h_board)
                 print("*********")
 
-            #print(depth, alpha, beta, record_type, h_depth, h_alpha, h_beta, h_best_move)
             if record_type == 'exact' and h_best_move and depth <= h_depth:
                 self.exact_hits += 1
                 return alpha, best_move
@@ -68,27 +71,34 @@ class NegaScout():
                 return beta, best_move
 
             if record_type == 'exact' and h_best_move:
+                #print(depth, 'pv_search', h_best_move)
                 used_move = h_best_move
                 self.pv_searches += 1
                 score, _ = self._negascout(board.move(h_best_move), depth-1, -beta, -alpha)
                 score *= -1
                 board.undo()
 
-                if score >= beta:
+                if score > beta:
                     self.pv_searches_beta += 1
                     return beta, h_best_move
 
                 if score > alpha:
                     alpha, best_move = score, h_best_move
                 #print("inside", depth, alpha, beta, score, record_type, h_depth, h_alpha, h_beta, h_best_move)
-
+        random.shuffle(moves)
         for move in moves:
             if used_move == move:
                 continue
 
+           #print_board(board)
+           #board._pretty_print(board.player1)
+           #board._pretty_print(board.player2)
+
+            #print(depth, move, alpha, beta)
             score, _ = self._negascout(board.move(move), depth-1, -beta, -alpha)
             score *= -1
             board.undo()
+            #print(depth, move, alpha, beta, score)
 
             if score >= beta:
                 self.transposition_table[board.hash()] = (
@@ -123,28 +133,36 @@ class NegaScout():
 
 if __name__ == '__main__':
     from ArrayBoard import ArrayBoard
-    board = ArrayBoard(
-    [
-        [ 0, 1, 1, 0, 0],
-        [ 0, 1, 1,-1,-1],
-        [ 1, 1, 0,-1,-1],
-        [-1, 1, 0, 0,-1],
-        [-1, 0,-1,-1, 0]
-    ],
-    current_player = -1)
+    from BitBoard import BitBoard
+    board = BitBoard.standard_board(allow_diagonals=True)
 
-    from display import print_board
+    #board._pretty_print(board.player1)
+    #board._pretty_print(board.player2)
     print_board(board)
 
-    search = NegaScout(6, use_deepening=False, use_table=False)
-    print(search.find_best_move(board))
-    print("Moves looked at:", search.moves_looked_at)
+    #search = NegaScout(6, use_deepening=False, use_table=False)
+    #print(search.find_best_move(board))
+    #print("Moves looked at:", search.moves_looked_at)
 
-    search1 = NegaScout(6, use_deepening=False, use_table=True)
-    print(search1.find_best_move(board))
-    print("Moves looked at:", search1.moves_looked_at, search1.exact_hits, search1.pv_searches)
+    #search1 = NegaScout(6, use_deepening=False, use_table=True)
+    #print(search1.find_best_move(board))
+    #print("Moves looked at:", search1.moves_looked_at, search1.exact_hits, search1.pv_searches)
 
-    search2 = NegaScout(10, use_deepening=True, use_table=True)
-    print(search2.find_best_move(board))
-    print("Moves looked at:", search2.moves_looked_at, search2.exact_hits, search2.pv_searches)
+    search1 = NegaScout(6, use_deepening=True, use_table=True)
+    search2 = NegaScout(6, use_deepening=True, use_table=True)
+    moves = board.get_moves()
+
+    while moves:
+        if board.current_player == BitBoard.PLAYER1:
+            score, move = search1.find_best_move(board)
+        else:
+            score, move = search2.find_best_move(board)
+
+        print(move, score)
+        print("Moves looked at:", search2.moves_looked_at, search2.exact_hits, search2.pv_searches)
+
+        board.move(move)
+        print_board(board)
+        moves = board.get_moves()
+
 
