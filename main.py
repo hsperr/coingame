@@ -2,6 +2,7 @@ from ArrayBoard import Board, ArrayBoard
 from BitBoard import BitBoard
 
 from monte_carlo import MonteCarloTreeSearch
+from monte_carlo_parallel import find_best_move
 from negascout import NegaScout
 
 from display import print_board
@@ -22,7 +23,7 @@ search2 = NegaScout(max_depth=8)
 
 while True:
     if board.current_player == Board.PLAYER1:
-        score, move = search.find_best_move(board)
+        score, move = find_best_move(board)
         print("MCMC score: {}, moves_searched: {}".format(score, search2.moves_looked_at))
     else:
         score, move = search2.find_best_move(board)

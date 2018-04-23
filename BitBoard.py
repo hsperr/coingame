@@ -79,6 +79,8 @@ class BitBoard(Board):
         return Board.NO_WINNER
 
     def _bit_scan(self, b):
+        if b == 0:
+            return []
         positions = []
         for idx, bit in enumerate(bin(b)[2:].zfill(25)):
             if bit == '1':
@@ -106,6 +108,9 @@ class BitBoard(Board):
 
     def value(self, x, y):
         depth = self._pos_to_int(x, y)
+
+        if depth < 0:
+            return Board.EMPTY
 
         is_current_player = (1 << depth) & self.player1
         if is_current_player:
@@ -184,6 +189,19 @@ class BitBoard(Board):
             return self._get_moves_for(self.player1)
         else:
             return self._get_moves_for(self.player2)
+
+    def get_moves_weighted_by_enemies(self):
+        result = []
+        for move in self.get_moves():
+            (from_x, from_y), (to_x, to_y) = move
+            num_neighbors = sum(1 for x in [
+                self.value(to_x+1, to_y),
+                self.value(to_x-1, to_y),
+                self.value(to_x, to_y+1),
+                self.value(to_x, to_y-1),
+                ] if x == self.other_player)
+            result.append((num_neighbors, move))
+        return result
 
     def get_num_occupied_fields(self, player):
         if player == Board.PLAYER1:

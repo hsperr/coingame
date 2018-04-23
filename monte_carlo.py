@@ -15,7 +15,6 @@ class MonteCarloTreeSearch():
         log_total = np.log(sum(plays.values()))
 
         weighted_moves = []
-
         for move in moves:
             positions_won = wins[(move, board.current_player, board.hash())]
             times_played = plays[(move, board.current_player, board.hash())]
@@ -31,17 +30,22 @@ class MonteCarloTreeSearch():
         plays = defaultdict(int)
         wins = defaultdict(int)
 
+        simul_moves = []
+
         t0 = time.time()
 
-        for i in range(1000):
-            if i and i%100==0:
-                print(i, time.time()-t0)
+        for i in range(2001):
+            if i and i%500==0:
+                print(i, sum(simul_moves), np.mean(simul_moves), time.time()-t0)
 
             visited_states = set()
             board = original_board.copy()
 
             while True:
                 moves = board.get_moves()
+                if not moves: 
+                    break
+
                 if self.fully_expanded(moves, plays, board):
                     score, move = self.best_uct(moves, wins, plays, board)
                     #print("UTC move {}, score {}".format(move, score))
@@ -58,8 +62,9 @@ class MonteCarloTreeSearch():
                         visited_states.add((move, board.current_player, board.hash()))
                         board.move(move)
             
-            winner = self._simulate(board.move(move))
+            num_moves, winner = self._simulate(board.move(move))
             #print("Winner for {} is {}".format(move, winner))
+            simul_moves.append(num_moves)
     
             #backpropagation
             for move, player, state in visited_states:
@@ -80,16 +85,22 @@ class MonteCarloTreeSearch():
                 best_score = score
             print(move, plays[key], score)
 
-        return best_score,best_move
+        print("Monte Carlo Stats, num_positions: {}, num_plays: {}".format(len(plays), sum(plays.values())))
+        return best_score, best_move
 
     def _simulate(self, board):
         board = board.copy()
+        num_moves = 0
         while True:
-            moves = board.get_moves()
+            #moves = board.get_moves()
+            moves = board.get_moves_weighted_by_enemies()
             if not moves:
-                return board.winner()
+                return num_moves, board.winner()
 
-            move = moves[np.random.choice(len(moves))]
+            total_score = sum(x[0]*50+1 for x in moves)
+            score, move = moves[np.random.choice(len(moves), p=[(x[0]*50+1)/total_score for x in moves])]
+            #move = moves[np.random.choice(len(moves))]
+            num_moves+=1
             board.move(move)
 
 if __name__ == '__main__':
