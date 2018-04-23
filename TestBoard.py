@@ -29,6 +29,11 @@ class BoardTestRunner():
         assert board.value(4, 1) == Board.PLAYER1
         assert board.value(0, 3) == Board.PLAYER2
 
+        board = self.board.standard_board()
+        assert not board.move(((1, 0), (2, 0))) == Board.INVALID_MOVE
+        assert board.get_num_occupied_fields(Board.PLAYER1) == 9
+        assert board.get_num_occupied_fields(Board.PLAYER2) == 7
+
 
     def test_board_move(self):
         board = self.board.standard_board()

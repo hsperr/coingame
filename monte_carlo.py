@@ -4,31 +4,47 @@ import numpy as np
 
 from ArrayBoard import ArrayBoard
 
+import time
+
 class MonteCarloTreeSearch():
+
+    def fully_expanded(self, moves, plays, board):
+      return all((move, board.current_player, board.hash()) in plays for move in moves)
+
+    def best_uct(self, moves, wins, plays, board): 
+        log_total = np.log(sum(plays.values()))
+
+        weighted_moves = []
+
+        for move in moves:
+            positions_won = wins[(move, board.current_player, board.hash())]
+            times_played = plays[(move, board.current_player, board.hash())]
+
+            score = positions_won/times_played + 1.4 * np.sqrt(log_total/times_played)
+
+            weighted_moves.append((score, move))
+
+        return max(weighted_moves)
     
     def find_best_move(self, board):
         original_board = board.copy()
         plays = defaultdict(int)
         wins = defaultdict(int)
 
-        for i in range(50):
+        t0 = time.time()
+
+        for i in range(1000):
             if i and i%100==0:
-                print(i)
+                print(i, time.time()-t0)
 
             visited_states = set()
             board = original_board.copy()
 
             while True:
                 moves = board.get_moves()
-                if all((move, board.current_player, board.hash()) in plays for move in moves):
-    
-                    log_total = np.log(sum(plays.values()))
-                    score, move  = max((
-                        wins[(move, board.current_player, board.hash())]/plays[(move, board.current_player, board.hash())] 
-                        + 1.4 * np.sqrt(log_total/plays[(move, board.current_player, board.hash())]), move
-                    ) for move in moves)
+                if self.fully_expanded(moves, plays, board):
+                    score, move = self.best_uct(moves, wins, plays, board)
                     #print("UTC move {}, score {}".format(move, score))
-
                     visited_states.add((move, board.current_player, board.hash()))
                     board.move(move)
                 else:
@@ -64,7 +80,7 @@ class MonteCarloTreeSearch():
                 best_score = score
             print(move, plays[key], score)
 
-        return best_move
+        return best_score,best_move
 
     def _simulate(self, board):
         board = board.copy()

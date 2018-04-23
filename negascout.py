@@ -4,7 +4,7 @@ import time
 
 class NegaScout():
 
-    def __init__(self, max_depth=6, use_deepening=False, use_table=False):
+    def __init__(self, max_depth=6, use_deepening=True, use_table=True):
         self.moves_looked_at = 0
         self.exact_hits = 0
         self.beta_hits = 0
@@ -17,12 +17,14 @@ class NegaScout():
         self.use_deepening = use_deepening
 
     def find_best_move(self, board):
+        self.transposition_table = {}
         board = board.copy()
 
         self.moves_looked_at = 0
 
         if self.use_deepening:
             t0 = time.time()
+            print("Start Iterative Deepening")
             for i in range(2, self.max_depth+1, 2):
                 self.moves_looked_at = 0
                 self.exact_hits = 0
@@ -30,6 +32,7 @@ class NegaScout():
                 self.pv_searches = 0
                 score, move = self._negascout(board, i, -1000000, 1000000)
                 print(i, score, move, self.moves_looked_at, self.exact_hits, self.beta_hits, self.pv_searches, self.pv_searches_beta, time.time()-t0)
+
             return score, move
         else:
             return self._negascout(board, self.max_depth, -1000000, 1000000)
@@ -64,13 +67,15 @@ class NegaScout():
                 print("*********")
 
             if record_type == 'exact' and h_best_move and depth <= h_depth:
+                #print(depth, 'exact', alpha, h_best_move)
                 self.exact_hits += 1
-                return alpha, best_move
+                return h_alpha, h_best_move
             if record_type == 'beta' and h_beta > beta and depth <= h_depth:
+                #print(depth, 'beta', h_best_move)
                 self.beta_hits += 1
-                return beta, best_move
+                return h_beta, h_best_move
 
-            if record_type == 'exact' and h_best_move:
+            if record_type == 'exact' and h_best_move and False:
                 #print(depth, 'pv_search', h_best_move)
                 used_move = h_best_move
                 self.pv_searches += 1
@@ -78,7 +83,7 @@ class NegaScout():
                 score *= -1
                 board.undo()
 
-                if score > beta:
+                if score >= beta:
                     self.pv_searches_beta += 1
                     return beta, h_best_move
 
@@ -90,10 +95,9 @@ class NegaScout():
             if used_move == move:
                 continue
 
-           #print_board(board)
-           #board._pretty_print(board.player1)
-           #board._pretty_print(board.player2)
-
+            #print_board(board)
+            #board._pretty_print(board.player1)
+            #board._pretty_print(board.player2)
             #print(depth, move, alpha, beta)
             score, _ = self._negascout(board.move(move), depth-1, -beta, -alpha)
             score *= -1
@@ -113,6 +117,11 @@ class NegaScout():
             
             if score > alpha:
                 alpha, best_move = score, move
+
+        if alpha == 1000000:
+            print_board(board)
+            print('depth', 'exact_save', alpha, beta, best_move)
+            asd
 
         hash_entry = (
             'exact',
@@ -148,8 +157,8 @@ if __name__ == '__main__':
     #print(search1.find_best_move(board))
     #print("Moves looked at:", search1.moves_looked_at, search1.exact_hits, search1.pv_searches)
 
-    search1 = NegaScout(6, use_deepening=True, use_table=True)
-    search2 = NegaScout(6, use_deepening=True, use_table=True)
+    search1 = NegaScout(8, use_deepening=True, use_table=True)
+    search2 = NegaScout(8, use_deepening=True, use_table=True)
     moves = board.get_moves()
 
     while moves:

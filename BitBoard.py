@@ -148,15 +148,18 @@ class BitBoard(Board):
 
         to_pos = (1 << self._pos_to_int(to_x, to_y))
 
-        to_pos = ((to_pos << 1) | (to_pos >> 1) | (to_pos << self.size_x) | (to_pos >> self.size_x)) & other_player
+        to_pos = (((to_pos & self.invert(self.left_border)) << 1) |
+                  ((to_pos & self.invert(self.right_border)) >> 1) |
+                  (to_pos << self.size_x) |
+                  (to_pos >> self.size_x)) & other_player
 
         player = player ^ to_pos
         other_player = other_player ^ to_pos
 
-        to_pos = ((to_pos << 1) & (to_pos << self.size_x) |
-                  (to_pos << 1) & (to_pos >> self.size_x) |
-                  (to_pos >> 1) & (to_pos << self.size_x) |
-                  (to_pos >> 1) & (to_pos >> self.size_x)) & other_player
+        to_pos = (((to_pos & self.invert(self.left_border)) << 1) & (to_pos << self.size_x) |
+                  ((to_pos & self.invert(self.left_border)) << 1) & (to_pos >> self.size_x) |
+                  ((to_pos & self.invert(self.right_border)) >> 1) & (to_pos << self.size_x) |
+                  ((to_pos & self.invert(self.right_border)) >> 1) & (to_pos >> self.size_x)) & other_player
 
         player = player ^ to_pos
         other_player = other_player ^ to_pos
