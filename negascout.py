@@ -54,7 +54,10 @@ class NegaScout():
         #print(board)
         moves = board.get_moves()
         if not moves:
-            return -9999999, None
+            if board._is_draw():
+                return 0, None
+            else:
+                return -9999999, None
         
         best_move = None
         used_move = None
@@ -139,24 +142,8 @@ class NegaScout():
 
         return alpha, best_move
 
-
-if __name__ == '__main__':
-    from ArrayBoard import ArrayBoard
-    from BitBoard import BitBoard
-    board = BitBoard.standard_board(allow_diagonals=True)
-
-    #board._pretty_print(board.player1)
-    #board._pretty_print(board.player2)
-    print_board(board)
-
-    #search = NegaScout(6, use_deepening=False, use_table=False)
-    #print(search.find_best_move(board))
-    #print("Moves looked at:", search.moves_looked_at)
-
-    #search1 = NegaScout(6, use_deepening=False, use_table=True)
-    #print(search1.find_best_move(board))
-    #print("Moves looked at:", search1.moves_looked_at, search1.exact_hits, search1.pv_searches)
-
+def self_play():
+    board = BitBoard.standard_board()
     search1 = NegaScout(8, use_deepening=True, use_table=True)
     search2 = NegaScout(8, use_deepening=True, use_table=True)
     moves = board.get_moves()
@@ -174,4 +161,23 @@ if __name__ == '__main__':
         print_board(board)
         moves = board.get_moves()
 
+if __name__ == '__main__':
+    from ArrayBoard import ArrayBoard
+    from BitBoard import BitBoard
 
+    #board._pretty_print(board.player1)
+    #board._pretty_print(board.player2)
+    board = BitBoard.from_string(
+        '''
+        XX.OO
+        OO.XX
+        O...X
+        OOX.X
+        .O..X
+       ''', 'X', allow_diagonals=True)
+    print_board(board)
+    print(board.get_moves())
+    search = NegaScout(1, use_deepening=False, use_table=True)
+    print(search.find_best_move(board))
+    #print(board.move(((2, 3), (1, 2))))
+    print_board(board)

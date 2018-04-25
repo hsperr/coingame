@@ -1,10 +1,9 @@
 from collections import defaultdict
+import time
 
 import numpy as np
 
 from ArrayBoard import ArrayBoard
-
-import time
 
 class MonteCarloTreeSearch():
 
@@ -33,13 +32,15 @@ class MonteCarloTreeSearch():
         simul_moves = []
 
         t0 = time.time()
+        max_depth = 0
 
-        for i in range(2001):
-            if i and i%500==0:
-                print(i, sum(simul_moves), np.mean(simul_moves), time.time()-t0)
+        for i in range(20001):
+            if i and i%5000==0:
+                print(i, sum(simul_moves), np.mean(simul_moves), time.time()-t0, max_depth)
 
             visited_states = set()
             board = original_board.copy()
+            depth = 0
 
             while True:
                 moves = board.get_moves()
@@ -50,6 +51,7 @@ class MonteCarloTreeSearch():
                     score, move = self.best_uct(moves, wins, plays, board)
                     #print("UTC move {}, score {}".format(move, score))
                     visited_states.add((move, board.current_player, board.hash()))
+                    depth += 1
                     board.move(move)
                 else:
                     move = moves[np.random.choice(len(moves))]
@@ -61,10 +63,19 @@ class MonteCarloTreeSearch():
                         #print("Known node {}".format(move))
                         visited_states.add((move, board.current_player, board.hash()))
                         board.move(move)
+                        depth += 1
             
-            num_moves, winner = self._simulate(board.move(move))
-            #print("Winner for {} is {}".format(move, winner))
-            simul_moves.append(num_moves)
+            if moves:
+                depth += 1
+                num_moves, winner = self._simulate(board.move(move), rollout=False)
+                depth+=num_moves
+                #print("Winner for {} is {}".format(move, winner))
+                simul_moves.append(num_moves)
+            else:
+                winner = board.winner()
+
+            if depth > max_depth:
+                max_depth = depth
     
             #backpropagation
             for move, player, state in visited_states:
@@ -83,25 +94,31 @@ class MonteCarloTreeSearch():
             if score > best_score:
                 best_move = move
                 best_score = score
-            print(move, plays[key], score)
+            #print(move, plays[key], score)
 
-        print("Monte Carlo Stats, num_positions: {}, num_plays: {}".format(len(plays), sum(plays.values())))
+        print("Monte Carlo Stats, num_positions: {}, num_plays: {}, max_depth {}".format(len(plays), sum(plays.values()), max_depth))
+        self.moves_looked_at = sum(plays.values())
         return best_score, best_move
 
-    def _simulate(self, board):
-        board = board.copy()
-        num_moves = 0
-        while True:
-            #moves = board.get_moves()
-            moves = board.get_moves_weighted_by_enemies()
-            if not moves:
-                return num_moves, board.winner()
+    def _simulate(self, board, rollout=True):
+        if rollout:
+            board = board.copy()
+            num_moves = 0
+            while True:
+                #moves = board.get_moves()
+                moves = board.get_moves_weighted_by_enemies()
+                if not moves:
+                    return num_moves, board.winner()
 
-            total_score = sum(x[0]*50+1 for x in moves)
-            score, move = moves[np.random.choice(len(moves), p=[(x[0]*50+1)/total_score for x in moves])]
-            #move = moves[np.random.choice(len(moves))]
-            num_moves+=1
-            board.move(move)
+                total_score = sum(x[0]*50+1 for x in moves)
+                score, move = moves[np.random.choice(len(moves), p=[(x[0]*50+1)/total_score for x in moves])]
+                #move = moves[np.random.choice(len(moves))]
+                num_moves+=1
+                board.move(move)
+        else:
+            score = board.get_num_occupied_fields(board.current_player) - board.get_num_occupied_fields(board.other_player)
+            return 0, board.current_player if score > 0 else board.other_player
+
 
 if __name__ == '__main__':
     board = ArrayBoard()

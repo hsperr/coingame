@@ -1,4 +1,5 @@
 from ArrayBoard import Board
+from display import print_board
 
 import random
 import copy
@@ -70,11 +71,21 @@ class BitBoard(Board):
     def invert(self, b):
         return int('1' * self.size_x * self.size_y, 2) - b
 
+    def _is_draw(self):
+        repeat = 0
+        for p1, p2, curp in self.history:
+            if p1 == self.player1 and p2 == self.player2 and curp == self.current_player:
+                repeat += 1
+        return repeat >= 3
+
     def winner(self):
         if not self._get_moves_for(self.player1):
             return Board.PLAYER2
         elif not self._get_moves_for(self.player2):
             return Board.PLAYER1
+
+        if self._is_draw():
+            return Board.DRAW
 
         return Board.NO_WINNER
 
@@ -126,15 +137,15 @@ class BitBoard(Board):
         ((from_x, from_y), (to_x, to_y)) = move
 
         if not self.valid_position(from_x, from_y) or not self.valid_position(to_x, to_y):
-            print('val pos', self.valid_position(from_x, from_y), self.valid_position(to_x, to_y))
+            print('INVALID POS', self.valid_position(from_x, from_y), self.valid_position(to_x, to_y))
             return Board.INVALID_MOVE
 
         if not self.value(from_x, from_y) == self.current_player:
-            print('value', self.value(from_x, from_y), self.current_player)
+            print('INVALID MOVE, from not player', self.value(from_x, from_y), self.current_player)
             return Board.INVALID_MOVE
 
         if not self.value(to_x, to_y) == Board.EMPTY:
-            print('empty', self.value(to_x, to_y) == Board.EMPTY)
+            print('INVALID MOVE to not empty', self.value(to_x, to_y) == Board.EMPTY)
             return Board.INVALID_MOVE
 
         if self.current_player == Board.PLAYER1:
@@ -185,6 +196,9 @@ class BitBoard(Board):
         self.history = self.history[:-1]
 
     def get_moves(self):
+        if self._is_draw():
+            return []
+
         if self.current_player == Board.PLAYER1:
             return self._get_moves_for(self.player1)
         else:
