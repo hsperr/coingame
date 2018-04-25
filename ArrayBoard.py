@@ -5,6 +5,7 @@ class Board():
     PLAYER1 = 1
     PLAYER2 = -1
 
+    DRAW = 'Draw'
     NO_WINNER = "No Winner"
     INVALID_MOVE = "Invalid Move"
 
@@ -16,6 +17,23 @@ class Board():
         [ PLAYER2, PLAYER2, EMPTY, PLAYER1, PLAYER1]
     ]
     STANDARD_BEGINNING_PLAYER = PLAYER1
+
+    @classmethod
+    def from_string(cls, board, current_player, allow_diagonals=False):
+        result = []
+        board = board.strip()
+        for line in board.split('\n'):
+            line = line.strip()
+            line_res = []
+            for entry in line:
+                if entry == 'X':
+                    line_res.append(Board.PLAYER1)
+                elif entry == 'O':
+                    line_res.append(Board.PLAYER2)
+                else:
+                    line_res.append(Board.EMPTY)
+            result.append(line_res)
+        return cls.from_array(result, Board.PLAYER1 if current_player=='X' else Board.PLAYER2, allow_diagonals)
 
     def valid_position(self, x, y):
         return 0 <= x < self.size_x and 0 <= y < self.size_y

@@ -224,6 +224,27 @@ class BoardTestRunner():
         assert Board.PLAYER1 == board.winner()
 
 
+    def test_from_string(self):
+        board = self.board.from_array([
+            [-1, 1, 1],
+            [-1, 1, 0],
+            [-1, 1, 1]
+        ],
+            Board.PLAYER1
+        )
+
+        board2 = self.board.from_string(
+                """
+                OXX
+                OX.
+                OXX
+                """,
+                "X"
+        )
+
+        assert board.hash() == board2.hash()
+
+
 class TestArrayBoard(BoardTestRunner):
     @classmethod
     def setup_class(cls):
